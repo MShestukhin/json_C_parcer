@@ -29,15 +29,28 @@ struct json_object * new_json(){
 }
 
 
-void pars_object(struct json_object * json_obj, FILE * fn, const char c){
-    char ch= c;
-    while (ch !='\"' && ch !=EOF){
-        ch=fgetc(fn);
-        switch (ch) {
+void pars_object(struct json_object * json_obj, FILE * fn, const char *c){
+    char *ch= c;
+    struct json_object* json_item;
+    struct json_object* iterator;
+    while (*ch !='}' && *ch !=EOF){
+        *ch=fgetc(fn);
+        switch (*ch) {
         case '\t':
             break;
         case '\"':
-            pars_item(json_obj, fn,c);
+            pars_item(json_obj, fn,ch);
+            break;
+        case '{':
+            iterator = json_obj;
+            while (iterator->next != NULL) {
+                iterator= iterator->next;
+            }
+            json_item = new_json();
+            iterator->next=json_item;
+            json_item->next=NULL;
+            json_item->level=json_obj->level+1;
+            pars_object(json_item,fn,ch);
             break;
         case '\n':
             break;
@@ -45,65 +58,78 @@ void pars_object(struct json_object * json_obj, FILE * fn, const char c){
             break;
         case ' ':
             break;
-        case '}':
-            printf("Not valid file\n");
-            printf("Empty object\n");
-            return 1;
         default:
-            printf("Not valid file\n");
+            printf("Not valid file : object\n");
             return 1;
         }
     }
-    return 0;
+    json_obj->is_open=close;
 }
 
-void pars_array(struct json_object * json_obj, FILE * fn, const char c){
-    char ch= c;
-    while (ch !='\"' && ch !=EOF){
-        ch=fgetc(fn);
-        switch (ch) {
+void pars_array(struct json_object * json_obj, FILE * fn, const char *c){
+    char *ch= c;
+    struct json_object* json_item;
+    struct json_object* iterator;
+    while (*ch !=']' && *ch !=EOF){
+        *ch=fgetc(fn);
+        switch (*ch) {
         case '\t':
             break;
         case '\n':
             break;
         case '\r':
             break;
+        case '\"':
+            pars_item(json_obj, fn,ch);
+            break;
+        case '{':
+            iterator = json_obj;
+            while (iterator->next != NULL) {
+                iterator= iterator->next;
+            }
+            json_item = new_json();
+            iterator->next=json_item;
+            json_item->next=NULL;
+            json_item->level=json_obj->level+1;
+            pars_object(json_item,fn,ch);
+            break;
         case ' ':
             break;
-        case ']':
-            printf("Not valid file\n");
-            printf("Empty array\n");
-            return 1;
         default:
-            printf("Not valid file\n");
+            printf("Not valid file : : array\n");
             return 1;
         }
     }
-    return 0;
 }
 
-void pars_item(struct json_object * json_obj, FILE * fn, const char c){
-    char ch= c;
-    while (ch !='\"' && ch !=EOF){
-        ch=fgetc(fn);
+void pars_item(struct json_object * json_obj, FILE * fn, const char *c){
+    char *ch= c;
+    while (*ch !='\"' && *ch !=EOF){
+        *ch=fgetc(fn);
     }
-    while (ch !=':' && ch !=EOF){
-        ch=fgetc(fn);
+    while (*ch !=':' && *ch !=EOF){
+        *ch=fgetc(fn);
     }
-    ch=fgetc(fn);
+    *ch=fgetc(fn);
     pars_value(json_obj, fn,ch);
-    return 0;
 }
 
-void pars_value(struct json_object * json_obj, FILE * fn, const char c){
-    char ch= c;
+void pars_value(struct json_object * json_obj, FILE * fn, const char *c){
+    char * ch= c;
     struct json_object* json_item;
-    while (ch !=',' && ch !=EOF){
-        switch (ch) {
+    struct json_object* iterator;
+    while (*ch !=',' && *ch !=EOF){
+        switch (*ch) {
             case ' ': {
                 break;
             }
             case '\n': {
+                break;
+            }
+            case '\t': {
+                break;
+            }
+            case '\r': {
                 break;
             }
             case 'n': {
@@ -116,9 +142,9 @@ void pars_value(struct json_object * json_obj, FILE * fn, const char c){
                 break;
             }
             case '\"':
-                ch=fgetc(fn);
-                while (ch !='\"' && ch !=EOF){
-                    ch=fgetc(fn);
+                *ch=fgetc(fn);
+                while (*ch !='\"' && *ch !=EOF){
+                    *ch=fgetc(fn);
                 }
                 json_obj->strings++;
                 break;
@@ -126,8 +152,12 @@ void pars_value(struct json_object * json_obj, FILE * fn, const char c){
                 pars_array(json_obj,fn,ch);
                 break;
             case '{':
+                iterator = json_obj;
+                while (iterator->next != NULL) {
+                    iterator= iterator->next;
+                }
                 json_item = new_json();
-                json_obj->next=json_item;
+                iterator->next=json_item;
                 json_item->next=NULL;
                 json_item->level=json_obj->level+1;
                 pars_object(json_item,fn,ch);
@@ -146,17 +176,15 @@ void pars_value(struct json_object * json_obj, FILE * fn, const char c){
                 json_obj->numbers++;
                 break;
             default:
-                printf("%c", ch);
-                printf("Not valid file\n");
+                printf("Not valid file : item\n");
                 return 1;
             }
-            ch=fgetc(fn);
-            if (ch == '}'){
-                json_obj->is_open=close;
+            *ch=fgetc(fn);
+            if (*ch == '}'){
+                 pars_object(json_obj,fn,ch);
                 break;
             }
     }
-
 }
 
 int main()
@@ -168,15 +196,14 @@ int main()
       return 1;
     }
 
-    char ch;
+    char *ch;
     struct json_object* kernel_json_object = new_json();
     kernel_json_object->next=NULL;
     kernel_json_object->level=0;
-    while((ch=fgetc(fn)) !=EOF) {
-        switch (ch) {
+    if((*ch=fgetc(fn)) !=EOF) {
+        switch (*ch) {
         case '{':
             pars_object(kernel_json_object, fn,ch);
-            printf("%c", ch);
             break;
         case '[':
             pars_array(kernel_json_object,fn,ch);
@@ -184,17 +211,18 @@ int main()
         case '\"':
             pars_item(kernel_json_object,fn,ch);
             break;
-//        default:
-//            return 0;
+        default:
+            printf("Not valid json\n");
+            return 1;
         }
     }
 
     struct json_object* iterator = kernel_json_object;
     while (iterator != NULL) {
-        if(!iterator->is_open)
+        if(iterator->is_open == close)
             printf("level : %d, strings : %d, numbers : %d\n",iterator->level, iterator->strings, iterator->numbers);
         else
-            printf("Not valid json");
+            printf("Not valid json\n");
         struct json_object* pointer_for_del = iterator;
         iterator= iterator->next;
         free(pointer_for_del);

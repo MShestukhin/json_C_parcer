@@ -1,4 +1,11 @@
-{"hello" : "world",
-{"ttt" : 9}, 
-"hello" : 10
+{
+"hello" : "ttt",
+"hello" : 10,
+"hello" : {
+	"ttt" : 9 ,
+	"hello" : {
+	"hello" : {"ttt" : 9}, "ttt" : 9}
+	},
+"hello" : {"ttt" : 9},
+{"hello" : {"ttt" : 9}, "ttt" : 9}}
 }
