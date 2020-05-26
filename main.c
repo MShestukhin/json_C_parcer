@@ -8,7 +8,12 @@
 #define false 0
 #define true 1
 
-#define array_object 2
+#define null 0
+#define array_object 1
+#define object 2
+#define string 3
+#define number 4
+#define bool 5
 
 #define HASH_MUL 31
 #define HASH_SIZE 128
@@ -16,7 +21,7 @@
 unsigned int hash(char * s  ){
     unsigned int h=0;
     char * p;
-    for(p=s;*p!='\n';p++){
+    for(p=s;*p!='\0';p++){
         h=h* HASH_MUL + (unsigned int)*p;
     }
     return h % HASH_SIZE;
@@ -31,9 +36,12 @@ struct json_object{
     int nulls;
     int level;
     int type;
+    char * name;
     char* all_used_name[128];
+    struct json_object* items[128];
     int all_used_types;
     struct json_object* next;
+    struct json_object* near;
     int is_open;
 };
 
@@ -60,6 +68,7 @@ void handl_error(struct json_object * json_obj, int err_code){
 
 struct json_object * new_json(){
     struct json_object* obj = malloc(sizeof(struct json_object));
+    obj->name='\0';
     obj->next=NULL;
     obj->all_used_types=0;
     obj->arrays=0;
@@ -71,6 +80,7 @@ struct json_object * new_json(){
     obj->level=0;
     obj->type=0;
     memset(obj->all_used_name, 0, sizeof(obj->all_used_name));
+    memset(obj->items, NULL, sizeof(obj->items));
     return obj;
 }
 
@@ -96,6 +106,18 @@ void pars_object(struct json_object * json_obj, FILE * fn, const char *c){
             iterator->next=json_item;
             json_item->next=NULL;
             json_item->level=json_obj->level+1;
+            json_item->type=object;
+
+
+            int key_hash=hash("");
+            iterator = json_obj->items[key_hash];
+            if(iterator == NULL) json_obj->items[key_hash] = json_item;
+            else {
+                while (iterator->near != NULL) {
+                    iterator= iterator->near;
+                }
+                iterator->near=json_item;
+            }
             pars_object(json_item,fn,ch);
             break;
         case '\n':
@@ -131,13 +153,13 @@ void pars_array(struct json_object * json_obj, FILE * fn, const char *c){
         case '\r':
             break;
         case '\"':
-            pars_value(json_obj, fn,ch);
+            pars_value(json_obj, fn,ch, 0);
             break;
         case ',':
             continue;
         case '{':
             json_obj->type=array_object;
-            pars_value(json_obj, fn,ch);
+            pars_value(json_obj, fn,ch, 0);
             break;
         case ' ':
             break;
@@ -164,9 +186,11 @@ void pars_item(struct json_object * json_obj, FILE * fn, const char *c){
         i++;
         *ch=fgetc(fn);
     }
-    str[i] = '\n';
     str=(char*)realloc(str, sizeof(str));
+    str[i]='\0';
+
     int key_hash=hash(str);
+
     if(json_obj->all_used_name[key_hash] == 0){
         json_obj->all_used_name[key_hash] = str;
     }
@@ -183,10 +207,10 @@ void pars_item(struct json_object * json_obj, FILE * fn, const char *c){
         *ch=fgetc(fn);
     }
     *ch=fgetc(fn);
-    pars_value(json_obj, fn,ch);
+    pars_value(json_obj, fn,ch, key_hash);
 }
 
-void pars_value(struct json_object * json_obj, FILE * fn, const char *c){
+void pars_value(struct json_object * json_obj, FILE * fn, const char *c, int key_hash){
     char * ch= c;
     struct json_object* json_item;
     struct json_object* iterator;
@@ -253,7 +277,21 @@ void pars_value(struct json_object * json_obj, FILE * fn, const char *c){
                     else {
                         json_item->level=json_obj->level+1;
                     }
+
+
+                    iterator = json_obj->items[key_hash];
+                    if(iterator == NULL) {
+                        json_item->name=json_obj->all_used_name[key_hash];
+                        json_obj->items[key_hash] = json_item;
+                    }
+                    else {
+                        while (iterator->near != NULL) {
+                            iterator= iterator->near;
+                        }
+                        iterator->near=json_item;
+                    }
                     pars_object(json_item,fn,ch);
+
                     if(json_obj->objects == 0) {json_obj->objects = true; json_obj->all_used_types++;}
                 break;
             case '-':
@@ -285,6 +323,26 @@ void pars_value(struct json_object * json_obj, FILE * fn, const char *c){
     }
 }
 
+int print_func(struct json_object* iterator, int level, int key){
+    static int most_included_level=0;
+    static int key_hash=0;
+    if(level>most_included_level){
+        most_included_level=level;
+        key_hash=key;
+    }
+    while (iterator != NULL) {
+        for(int i=0; i<128; i++){
+            if(iterator->items[i] != NULL){
+                if(iterator->items[i] != 0 && iterator->items[i]->name != NULL)
+                    printf("level : %d name : %s -> used_types : %d\n",iterator->level, iterator->items[i]->name, iterator->items[i]->all_used_types);
+                print_func(iterator->items[i], iterator->level, i);
+            }
+        }
+        iterator=iterator->near;
+    }
+    return key_hash;
+}
+
 int main(int argc, char* argv[])
 {
     FILE * fn;
@@ -302,6 +360,7 @@ int main(int argc, char* argv[])
     if((*ch=fgetc(fn)) !=EOF) {
         switch (*ch) {
         case '{':
+            kernel_json_object->type=object;
             pars_object(kernel_json_object, fn,ch);
             break;
         case '[':
@@ -317,20 +376,24 @@ int main(int argc, char* argv[])
     }
 
     struct json_object* iterator = kernel_json_object;
-    int most_includive_level=0;
-    while (iterator != NULL) {
-        if(iterator->level > most_includive_level) most_includive_level = iterator->level;
-        if(iterator->is_open == close)
-            printf("level : %d, all used types : %d\n",iterator->level, iterator->all_used_types);
-        else
-            printf("Not valid json\n");
-        struct json_object* pointer_for_del = iterator;
-        iterator= iterator->next;
-        for(int i=0; i<128; i++)
-            if(pointer_for_del->all_used_name[i] !=0) free(pointer_for_del->all_used_name[i]);
-        free(pointer_for_del);
-    }
-    printf("Most included level object : %d\n",most_includive_level);
+    int key=print_func(iterator,iterator->level,0);
+    printf("%d\n",key);
+
+
+//    int most_includive_level=0;
+//    while (iterator != NULL) {
+//        if(iterator->level > most_includive_level) most_includive_level = iterator->level;
+//        if(iterator->is_open == close)
+//            printf("level : %d, all used types : %d\n",iterator->level, iterator->all_used_types);
+//        else
+//            printf("Not valid json\n");
+//        struct json_object* pointer_for_del = iterator;
+//        iterator= iterator->next;
+//        for(int i=0; i<128; i++)
+//            if(pointer_for_del->all_used_name[i] !=0) free(pointer_for_del->all_used_name[i]);
+//        free(pointer_for_del);
+//    }
+//    printf("Most included level object : %d\n",most_includive_level);
 
     fclose(fn);
     return 0;
