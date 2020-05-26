@@ -115,7 +115,6 @@ void pars_array(struct json_object * json_obj, FILE * fn, const char *c){
     char *ch= c;
     while (*ch !=']' && *ch !=EOF){
         *ch=fgetc(fn);
-        if(*ch == ']') break;
         switch (*ch) {
         case '\t':
             break;
@@ -128,6 +127,7 @@ void pars_array(struct json_object * json_obj, FILE * fn, const char *c){
             break;
         case ',':
             *ch=fgetc(fn);
+            printf(*ch);
             pars_value(json_obj, fn,ch, 0);
             break;
         case '{':
@@ -355,8 +355,20 @@ int main(int argc, char* argv[])
     kernel_json_object->near=NULL;
     kernel_json_object->level=0;
     handl_error(kernel_json_object,0);
-    if((*ch=fgetc(fn)) !=EOF) {
+    while((*ch=fgetc(fn)) !=EOF) {
         switch (*ch) {
+        case ' ': {
+            break;
+        }
+        case '\n': {
+            break;
+        }
+        case '\t': {
+            break;
+        }
+        case '\r': {
+            break;
+        }
         case '{':
             kernel_json_object->type=object;
             pars_object(kernel_json_object, fn,ch);
