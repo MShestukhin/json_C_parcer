@@ -156,7 +156,9 @@ void pars_array(struct json_object * json_obj, FILE * fn, const char *c){
             pars_value(json_obj, fn,ch, 0);
             break;
         case ',':
-            continue;
+            *ch=fgetc(fn);
+            pars_value(json_obj, fn,ch, 0);
+            break;
         case '{':
             json_obj->type=array_object;
             pars_value(json_obj, fn,ch, 0);
@@ -164,7 +166,7 @@ void pars_array(struct json_object * json_obj, FILE * fn, const char *c){
         case ' ':
             break;
         default:
-            printf("Not valid file : array\n");
+            printf("Not valid file : array %c\n", *ch);
             handl_error(json_obj,1);
         }
     }
@@ -331,10 +333,12 @@ int print_func(struct json_object* iterator, int level, int key){
         key_hash=key;
     }
     while (iterator != NULL) {
+        if(iterator->name != NULL)
+            printf("level : %d name : %s -> used_types : %d\n",iterator->level, iterator->name, iterator->all_used_types);
+        else
+            printf("level : %d name : unnamed -> used_type : %d\n",iterator->level, iterator->all_used_types);
         for(int i=0; i<128; i++){
             if(iterator->items[i] != NULL){
-                if(iterator->items[i] != 0 && iterator->items[i]->name != NULL)
-                    printf("level : %d name : %s -> used_types : %d\n",iterator->level, iterator->items[i]->name, iterator->items[i]->all_used_types);
                 print_func(iterator->items[i], iterator->level, i);
             }
         }
