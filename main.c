@@ -86,6 +86,12 @@ void pars_object(struct json_object * json_obj, FILE * fn, const char *c){
     while (*ch !='}' && *ch !=EOF){
         *ch=fgetc(fn);
         switch (*ch) {
+        case '/': {
+            if((*ch=fgetc(fn))=='/'){
+                while(*ch=fgetc(fn) != '\n'){}
+            };
+            break;
+        }
         case '\t':
             break;
         case '\"':
@@ -116,6 +122,12 @@ void pars_array(struct json_object * json_obj, FILE * fn, const char *c){
     while (*ch !=']' && *ch !=EOF){
         *ch=fgetc(fn);
         switch (*ch) {
+        case '/': {
+            if((*ch=fgetc(fn))=='/'){
+                while(*ch=fgetc(fn) != '\n'){}
+            };
+            break;
+        }
         case '\t':
             break;
         case '\n':
@@ -189,6 +201,12 @@ void pars_value(struct json_object * json_obj, FILE * fn, const char *c, int key
     struct json_object* iterator;
     while (*ch !=',' && *ch !=EOF){
         switch (*ch) {
+            case '/': {
+                if((*ch=fgetc(fn))=='/'){
+                    while(*ch=fgetc(fn) != '\n'){}
+                };
+                break;
+            }
             case ' ': {
                 break;
             }
@@ -357,6 +375,12 @@ int main(int argc, char* argv[])
     handl_error(kernel_json_object,0);
     while((*ch=fgetc(fn)) !=EOF) {
         switch (*ch) {
+        case '/': {
+            if((*ch=fgetc(fn))=='/'){
+                while(*ch=fgetc(fn) != '\n'){}
+            };
+            break;
+        }
         case ' ': {
             break;
         }
