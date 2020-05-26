@@ -177,7 +177,6 @@ void pars_item(struct json_object * json_obj, FILE * fn, const char *c){
     char *ch= c;
 
     const int BUF_LEN = 50;
-
     int len = BUF_LEN;
     int i = 0;
     char * str=(char*)malloc(BUF_LEN*sizeof(char));
@@ -341,12 +340,15 @@ void clear_hash_table(struct json_object* iterator){
     }
 }
 
+char * hash_name_str;
+
 int print_func(struct json_object* iterator, int level, int key){
     static int most_included_level=0;
     static int key_hash=0;
     if(level>most_included_level){
         most_included_level=level;
         key_hash=key;
+        hash_name_str = iterator->name;
     }
     while (iterator != NULL) {
         if(iterator->name != NULL)
@@ -375,6 +377,7 @@ int main(int argc, char* argv[])
     char *ch;
     struct json_object* kernel_json_object = new_json();
     kernel_json_object->next=NULL;
+    kernel_json_object->near=NULL;
     kernel_json_object->level=0;
     handl_error(kernel_json_object,0);
     if((*ch=fgetc(fn)) !=EOF) {
@@ -384,6 +387,7 @@ int main(int argc, char* argv[])
             pars_object(kernel_json_object, fn,ch);
             break;
         case '[':
+            kernel_json_object->type=array_object;
             pars_array(kernel_json_object,fn,ch);
             break;
         case '\"':
@@ -396,8 +400,9 @@ int main(int argc, char* argv[])
     }
 
     struct json_object* iterator = kernel_json_object;
-    int key=print_func(iterator,iterator->level,0);
-    printf("%d\n",key);
+    int key=print_func(iterator,0,0);
+    printf("key : %s, hash : %d\n",hash_name_str ,key);
+    clear_hash_table(iterator);
 
 
 //    int most_includive_level=0;

@@ -1,4 +1,4 @@
-{
+[
 {
 	"first" : "ttt",
 	"second" : null,
@@ -12,18 +12,44 @@
 		"ddd_obj" : {"ttt" : 9}, "ttt" : 9}
 		},
 	"array" : ["ttt", "ttt"],
-	"array_with_obj" : [{"ttt" : 9}, "ttt"],
+	"arra" : [{"ttt" : 9, "added" : {"ttt" : 9}}, "ttt"],
 	{
 		"test" : 9,
 		"tt" : {
-			 	{	
-				"test" : 9,
-				"a" : {
-					"test" : 9
+			 	"t" : {	
+					"test" : 9,
+					"a" : {
+						"test" : 9
+					}
 				}
-			}
+		}
+	}
+},
+{
+	"first" : "ttt",
+	"second" : null,
+	"third" : true,
+	"fifth" : false,
+	"six" : "ttt",
+	"seven" : 10,
+	"d_obj" : {
+		"d_dec" : 9 ,
+		"dd_obj" : {
+		"ddd_obj" : {"ttt" : 9}, "ttt" : 9}
+		},
+	"array" : ["ttt", "ttt"],
+	"arra" : [{"ttt" : 9, "added" : {"ttt" : 9}}, "ttt"],
+	{
+		"test" : 9,
+		"tt" : {
+			 	"t" : {	
+					"test" : 9,
+					"a" : {
+						"test" : 9
+					}
+				}
 		}
 	}
 }
-}
+]
 
