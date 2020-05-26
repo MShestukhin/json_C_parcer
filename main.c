@@ -177,6 +177,7 @@ void pars_item(struct json_object * json_obj, FILE * fn, const char *c){
     char *ch= c;
 
     const int BUF_LEN = 50;
+
     int len = BUF_LEN;
     int i = 0;
     char * str=(char*)malloc(BUF_LEN*sizeof(char));
@@ -400,8 +401,9 @@ int main(int argc, char* argv[])
     }
 
     struct json_object* iterator = kernel_json_object;
+    int* key_hash;
     int key=print_func(iterator,0,0);
-    printf("key : %s, hash : %d\n",hash_name_str ,key);
+    printf("name : %s, hash: %d\n",hash_name_str ,key);
     clear_hash_table(iterator);
 
 
