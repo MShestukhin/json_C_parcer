@@ -55,13 +55,14 @@ void handl_error(struct json_object * json_obj, int err_code){
         break;
     case 1:
         iterator = kernel_json_object;
-        while (iterator != NULL) {
-            pointer_for_del = iterator;
-            iterator= iterator->next;
-            for(int i=0; i<128; i++)
-                if(pointer_for_del->all_used_name[i] !=0) free(pointer_for_del->all_used_name[i]);
-            free(pointer_for_del);
-        }
+        clear_hash_table(iterator);
+//        while (iterator != NULL) {
+//            pointer_for_del = iterator;
+//            iterator= iterator->next;
+//            for(int i=0; i<128; i++)
+//                if(pointer_for_del->all_used_name[i] !=0) free(pointer_for_del->all_used_name[i]);
+//            free(pointer_for_del);
+//        }
         exit(1);
     }
 }
@@ -322,6 +323,21 @@ void pars_value(struct json_object * json_obj, FILE * fn, const char *c, int key
                  pars_array(json_obj,fn,ch);
                 break;
             }
+    }
+}
+
+void clear_hash_table(struct json_object* iterator){
+    while (iterator != NULL) {
+        if(iterator->name != NULL)
+            free(iterator->name);
+        for(int i=0; i<128; i++){
+            if(iterator->items[i] != NULL){
+                clear_hash_table(iterator->items[i]);
+            }
+        }
+        struct json_object* iterator_for_del = iterator;
+        iterator=iterator->near;
+        free(iterator_for_del);
     }
 }
 
