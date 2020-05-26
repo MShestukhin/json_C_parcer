@@ -37,10 +37,10 @@ struct json_object{
     int level;
     int type;
     char * name;
+    int iter;
     char* all_used_name[128];
     struct json_object* items[128];
     int all_used_types;
-    struct json_object* next;
     struct json_object* near;
     int is_open;
 };
@@ -72,6 +72,7 @@ struct json_object * new_json(){
     obj->nulls=0;
     obj->level=0;
     obj->type=0;
+    obj->iter=0;
     memset(obj->all_used_name, 0, sizeof(obj->all_used_name));
     memset(obj->items, NULL, sizeof(obj->items));
     return obj;
@@ -238,25 +239,35 @@ void pars_value(struct json_object * json_obj, FILE * fn, const char *c, int key
             case '{':
                     iterator = json_obj;
                     json_item = new_json();
+                    json_item->level=json_obj->level+1;
                     if(json_obj->type == array_object){
-                        json_item->level=0;
-                    }
-                    else {
-                        json_item->level=json_obj->level+1;
-                    }
-
-
-                    iterator = json_obj->items[key_hash];
-                    if(iterator == NULL) {
-                        json_item->name=json_obj->all_used_name[key_hash];
-                        json_obj->items[key_hash] = json_item;
-                    }
-                    else {
-                        while (iterator->near != NULL) {
-                            iterator= iterator->near;
+                        iterator = json_obj->items[json_obj->iter];
+                        if(iterator == NULL) {
+                            json_item->name=json_obj->all_used_name[key_hash];
+                            json_obj->items[json_obj->iter] = json_item;
                         }
-                        iterator->near=json_item;
+                        else {
+                            while (iterator->near != NULL) {
+                                iterator= iterator->near;
+                            }
+                            iterator->near=json_item;
+                        }
                     }
+                    else {
+                        iterator = json_obj->items[key_hash];
+                        if(iterator == NULL) {
+                            json_item->name=json_obj->all_used_name[key_hash];
+                            json_obj->items[key_hash] = json_item;
+                        }
+                        else {
+                            while (iterator->near != NULL) {
+                                iterator= iterator->near;
+                            }
+                            iterator->near=json_item;
+                        }
+                    }
+
+
                     pars_object(json_item,fn,ch);
 
                     if(json_obj->objects == 0) {json_obj->objects = true; json_obj->all_used_types++;}
@@ -341,7 +352,6 @@ int main(int argc, char* argv[])
 
     char *ch;
     struct json_object* kernel_json_object = new_json();
-    kernel_json_object->next=NULL;
     kernel_json_object->near=NULL;
     kernel_json_object->level=0;
     handl_error(kernel_json_object,0);
@@ -365,7 +375,6 @@ int main(int argc, char* argv[])
     }
 
     struct json_object* iterator = kernel_json_object;
-    int* key_hash;
     int key=print_func(iterator,0,0);
     if(hash_name_str != NULL)
         printf("name : %s, hash: %d\n",hash_name_str ,key);
