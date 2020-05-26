@@ -90,24 +90,6 @@ void pars_object(struct json_object * json_obj, FILE * fn, const char *c){
         case '\"':
             pars_item(json_obj, fn,ch);
             break;
-        case '{':
-            iterator = json_obj;
-            json_item = new_json();
-            json_item->level=json_obj->level+1;
-            json_item->type=object;
-
-
-            int key_hash=hash("");
-            iterator = json_obj->items[key_hash];
-            if(iterator == NULL) json_obj->items[key_hash] = json_item;
-            else {
-                while (iterator->near != NULL) {
-                    iterator= iterator->near;
-                }
-                iterator->near=json_item;
-            }
-            pars_object(json_item,fn,ch);
-            break;
         case '\n':
             break;
         case '\r':
