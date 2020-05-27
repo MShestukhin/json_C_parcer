@@ -100,8 +100,6 @@ struct json_object * new_json(){
 
 void pars_object(struct json_object * json_obj, FILE * fn, char *c){
     char *ch= c;
-    struct json_object* json_item;
-    struct json_object* iterator;
     while (*ch !='}' && *ch !=EOF){
         *ch=fgetc(fn);
         switch (*ch) {
@@ -138,6 +136,7 @@ void pars_object(struct json_object * json_obj, FILE * fn, char *c){
 
 void pars_array(struct json_object * json_obj, FILE * fn, char *c){
     char *ch= c;
+    int comma=false;
     while (*ch !=']' && *ch !=EOF){
         *ch=fgetc(fn);
         switch (*ch) {
@@ -155,14 +154,17 @@ void pars_array(struct json_object * json_obj, FILE * fn, char *c){
             break;
         case '\"':
             pars_value(json_obj, fn,ch, 0);
+            if(*ch == ',') comma = true;
             break;
         case ',':
             *ch=fgetc(fn);
             pars_value(json_obj, fn,ch, 0);
+            if(*ch == ',') comma = true;
             break;
         case '{':
             json_obj->type=array_object;
             pars_value(json_obj, fn,ch, 0);
+            if(*ch == ',') comma = true;
             break;
         case ' ':
             break;
@@ -170,6 +172,11 @@ void pars_array(struct json_object * json_obj, FILE * fn, char *c){
             printf("Not valid file : array %c\n", *ch);
             handl_error(json_obj,1);
         }
+    }
+    if(comma == false && *ch == ']')
+    {
+        printf("Not valid array : Missing comma\n");
+        handl_error(json_obj,1);
     }
 }
 
@@ -328,10 +335,10 @@ void pars_value(struct json_object * json_obj, FILE * fn, char *c, int key_hash)
             *ch=fgetc(fn);
             if (*ch == '}'){
                  pars_object(json_obj,fn,ch);
-                break;
+                 break;
             }
             if (*ch == ']'){
-                 pars_array(json_obj,fn,ch);
+//                 pars_array(json_obj,fn,ch);
                 break;
             }
     }
