@@ -47,8 +47,8 @@ struct json_object{
 
 
 struct json_object * new_json();
-void pars_item(struct json_object * json_obj, FILE * fn, const char *c);
-void pars_value(struct json_object * json_obj, FILE * fn, const char *c, int key_hash);
+void pars_item(struct json_object * json_obj, FILE * fn, char *c);
+void pars_value(struct json_object * json_obj, FILE * fn, char *c, int key_hash);
 void clear_hash_table(struct json_object* iterator){
     while (iterator != NULL) {
         if(iterator->name != NULL)
@@ -173,7 +173,7 @@ void pars_array(struct json_object * json_obj, FILE * fn, char *c){
     }
 }
 
-void pars_item(struct json_object * json_obj, FILE * fn, const char *c){
+void pars_item(struct json_object * json_obj, FILE * fn, char *c){
     char *ch= c;
 
     const int BUF_LEN = 50;
@@ -213,7 +213,7 @@ void pars_item(struct json_object * json_obj, FILE * fn, const char *c){
     pars_value(json_obj, fn,ch, key_hash);
 }
 
-void pars_value(struct json_object * json_obj, FILE * fn, const char *c, int key_hash){
+void pars_value(struct json_object * json_obj, FILE * fn, char *c, int key_hash){
     char * ch= c;
     struct json_object* json_item;
     struct json_object* iterator;
@@ -380,7 +380,7 @@ int main(int argc, char* argv[])
         switch (*ch) {
         case '/': {
             if((*ch=fgetc(fn))=='/'){
-                while(*ch=fgetc(fn) != '\n'){}
+                while((*ch=fgetc(fn)) != '\n'){}
             };
             break;
         }
