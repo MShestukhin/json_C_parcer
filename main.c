@@ -45,6 +45,25 @@ struct json_object{
     int is_open;
 };
 
+
+struct json_object * new_json();
+void pars_item(struct json_object * json_obj, FILE * fn, const char *c);
+void pars_value(struct json_object * json_obj, FILE * fn, const char *c, int key_hash);
+void clear_hash_table(struct json_object* iterator){
+    while (iterator != NULL) {
+        if(iterator->name != NULL)
+            free(iterator->name);
+        for(int i=0; i<128; i++){
+            if(iterator->items[i] != NULL){
+                clear_hash_table(iterator->items[i]);
+            }
+        }
+        struct json_object* iterator_for_del = iterator;
+        iterator=iterator->near;
+        free(iterator_for_del);
+    }
+}
+
 void handl_error(struct json_object * json_obj, int err_code){
     static struct json_object * kernel_json_object;
     struct json_object* iterator;
@@ -62,7 +81,7 @@ void handl_error(struct json_object * json_obj, int err_code){
 
 struct json_object * new_json(){
     struct json_object* obj = malloc(sizeof(struct json_object));
-    obj->name='\0';
+    obj->name=0;
     obj->all_used_types=0;
     obj->arrays=0;
     obj->is_open=open;
@@ -74,12 +93,12 @@ struct json_object * new_json(){
     obj->type=0;
     obj->iter=0;
     memset(obj->all_used_name, 0, sizeof(obj->all_used_name));
-    memset(obj->items, NULL, sizeof(obj->items));
+    memset(obj->items, 0, sizeof(obj->items));
     return obj;
 }
 
 
-void pars_object(struct json_object * json_obj, FILE * fn, const char *c){
+void pars_object(struct json_object * json_obj, FILE * fn, char *c){
     char *ch= c;
     struct json_object* json_item;
     struct json_object* iterator;
@@ -88,7 +107,7 @@ void pars_object(struct json_object * json_obj, FILE * fn, const char *c){
         switch (*ch) {
         case '/': {
             if((*ch=fgetc(fn))=='/'){
-                while(*ch=fgetc(fn) != '\n'){}
+                while((*ch=fgetc(fn)) != '\n'){}
             };
             break;
         }
@@ -117,14 +136,14 @@ void pars_object(struct json_object * json_obj, FILE * fn, const char *c){
     }
 }
 
-void pars_array(struct json_object * json_obj, FILE * fn, const char *c){
+void pars_array(struct json_object * json_obj, FILE * fn, char *c){
     char *ch= c;
     while (*ch !=']' && *ch !=EOF){
         *ch=fgetc(fn);
         switch (*ch) {
         case '/': {
             if((*ch=fgetc(fn))=='/'){
-                while(*ch=fgetc(fn) != '\n'){}
+                while((*ch=fgetc(fn)) != '\n'){}
             };
             break;
         }
@@ -139,7 +158,6 @@ void pars_array(struct json_object * json_obj, FILE * fn, const char *c){
             break;
         case ',':
             *ch=fgetc(fn);
-            printf(*ch);
             pars_value(json_obj, fn,ch, 0);
             break;
         case '{':
@@ -203,7 +221,7 @@ void pars_value(struct json_object * json_obj, FILE * fn, const char *c, int key
         switch (*ch) {
             case '/': {
                 if((*ch=fgetc(fn))=='/'){
-                    while(*ch=fgetc(fn) != '\n'){}
+                    while((*ch=fgetc(fn)) != '\n'){}
                 };
                 break;
             }
@@ -319,21 +337,6 @@ void pars_value(struct json_object * json_obj, FILE * fn, const char *c, int key
     }
 }
 
-void clear_hash_table(struct json_object* iterator){
-    while (iterator != NULL) {
-        if(iterator->name != NULL)
-            free(iterator->name);
-        for(int i=0; i<128; i++){
-            if(iterator->items[i] != NULL){
-                clear_hash_table(iterator->items[i]);
-            }
-        }
-        struct json_object* iterator_for_del = iterator;
-        iterator=iterator->near;
-        free(iterator_for_del);
-    }
-}
-
 char * hash_name_str;
 
 int print_func(struct json_object* iterator, int level, int key){
@@ -368,7 +371,7 @@ int main(int argc, char* argv[])
       return 1;
     }
 
-    char *ch;
+    char *ch = (char*)malloc(sizeof(char));
     struct json_object* kernel_json_object = new_json();
     kernel_json_object->near=NULL;
     kernel_json_object->level=0;
@@ -409,7 +412,7 @@ int main(int argc, char* argv[])
             return 1;
         }
     }
-
+    free(ch);
     struct json_object* iterator = kernel_json_object;
     int key=print_func(iterator,0,0);
     if(hash_name_str != NULL)
